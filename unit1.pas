@@ -14,19 +14,22 @@ type
 
   TForm1 = class(TForm)
     BDS: TBufDataset;
-    Button1: TButton;
+    btnSave: TButton;
+    btnLoad: TButton;
     DataSource1: TDataSource;
     DBGrid1: TDBGrid;
-    SpinEdit1: TSpinEdit;
-    SpinEdit2: TSpinEdit;
-    procedure Button1Click(Sender: TObject);
+    procedure btnLoadClick(Sender: TObject);
+    procedure btnSaveClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private
 
   public
-
+    procedure InitBDS(Sender: TBufDataset);
   end;
 
+const
+  DataFile = 'c:\proj\buf_dataset\data\BufData.dat';
+  FieldDataFile = 'c:\proj\buf_dataset\data\FieldData.dat';
 var
   Form1: TForm1;
 
@@ -39,62 +42,40 @@ implementation
 procedure TForm1.FormCreate(Sender: TObject);
 var
   i: PtrInt = 0;
-  a: PtrInt = 0;
-  s: String = '';
 begin
-  with BDS do
+  InitBDS(BDS);
+  Randomize;
+
+  BDS.Active:= True;
+
+  for i:= 0 to 99 do
+    BDS.AppendRecord([Nil,Random(100),FormatDateTime('hh:nn:zzz',Now)]);
+end;
+
+procedure TForm1.InitBDS(Sender: TBufDataset);
+begin
+  with TBufDataset(Sender) do
   begin
+    Clear;
     FieldDefs.Add('SQN', ftAutoInc);
     FieldDefs.Add('ID', ftInteger);
     FieldDefs.Add('STR', ftString, 10);
     CreateDataset;
-    Active:= True;
-
-    Randomize;
-
-    for i:= 0 to 100 do
-    begin
-      a:= Random(100);
-      s:= FormatDateTime('hh:nn:zzz',Now);
-      AppendRecord([Nil,a,s]);
-    end;
-  end;
-
-  with SpinEdit1 do
-  begin
-    MinValue:= 0;
-    MaxValue:= 100;
-  end;
-
-  with SpinEdit2 do
-  begin
-    MinValue:= 0;
-    MaxValue:= 100;
+    //Active:= True;
   end;
 end;
 
-procedure TForm1.Button1Click(Sender: TObject);
-var
-  i: PtrInt = 0;
+procedure TForm1.btnSaveClick(Sender: TObject);
 begin
-  BDS.Filtered:= False;
-  BDS.Filter:= 'ID>' + IntToStr(SpinEdit1.Value) + ' and ID<' + IntToStr(SpinEdit2.Value);
-  //BDS.Filter:= 'ID>' + IntToStr(SpinEdit1.Value) + ' or ID<' + IntToStr(SpinEdit2.Value);
-  BDS.Filtered:= True;
-  BDS.DisableControls;
+  if BDS.Active then
+    if not BDS.IsEmpty then
+      BDS.SaveToFile(DataFile,dfDefault);
+end;
 
-  try
-    BDS.First;
-    while not BDS.EOF do
-    begin
-      Inc(i);
-      BDS.Next;
-    end;
-  finally
-    BDS.EnableControls;
-  end;
-
-  Caption:= IntToStr(i);
+procedure TForm1.btnLoadClick(Sender: TObject);
+begin
+  BDS.Clear;
+  BDS.LoadFromFile(DataFile);
 end;
 
 end.
